@@ -12,6 +12,16 @@ TableflipFoundry/claude-plugins
 
 Then switch to the **Plugins** tab to install individual plugins from the marketplace.
 
+### One-time setup (avoids an SSH host-key error during install)
+
+Some Claude Code versions clone plugins via SSH, which fails on machines that have never connected to GitHub over SSH. Run this once in PowerShell or any terminal — it tells git to use HTTPS instead of SSH for github.com, which works without any keys or extra setup:
+
+```bash
+git config --global url."https://github.com/".insteadOf "git@github.com:"
+```
+
+After that, plugin installs from any GitHub-hosted Claude Code marketplace will work without a host-key prompt. This is a general git ergonomics improvement, not specific to this marketplace.
+
 ## Plugins
 
 ### [obsidian-canvas-diagram](https://github.com/TableflipFoundry/obsidian-canvas-diagram)
