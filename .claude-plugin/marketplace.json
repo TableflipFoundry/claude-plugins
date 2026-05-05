@@ -1,6 +1,5 @@
 {
   "name": "tableflipfoundry",
-  "description": "Claude Code plugins by Tableflip Foundry",
   "owner": {
     "name": "Tableflip Foundry",
     "url": "https://github.com/TableflipFoundry"
@@ -9,10 +8,7 @@
     {
       "name": "obsidian-canvas-diagram",
       "description": "Generate richly-documented diagrams in an Obsidian vault. Each node is a full markdown file; the canvas assembles them visually with universal color conventions and human-style layout.",
-      "source": {
-        "source": "github",
-        "repo": "TableflipFoundry/obsidian-canvas-diagram"
-      },
+      "source": "./plugins/obsidian-canvas-diagram",
       "version": "0.1.0"
     }
   ]
