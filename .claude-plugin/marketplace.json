@@ -1,15 +1,15 @@
 {
-  "name": "tableflipfoundry",
-  "owner": {
-    "name": "Tableflip Foundry",
-    "url": "https://github.com/TableflipFoundry"
-  },
-  "plugins": [
-    {
-      "name": "obsidian-canvas-diagram",
-      "description": "Generate richly-documented diagrams in an Obsidian vault. Each node is a full markdown file; the canvas assembles them visually with universal color conventions and human-style layout.",
-      "source": "./plugins/obsidian-canvas-diagram",
-      "version": "0.1.0"
-    }
-  ]
+    "name":  "tableflipfoundry",
+    "owner":  {
+                  "name":  "Tableflip Foundry",
+                  "url":  "https://github.com/TableflipFoundry"
+              },
+    "plugins":  [
+                    {
+                        "name":  "obsidian-canvas-diagram",
+                        "description":  "Generate richly-documented diagrams in an Obsidian vault. Each node is a full markdown file; bundled scripts lay the canvas out automatically, check it in Obsidian, and list issues found in the code.",
+                        "source":  "./plugins/obsidian-canvas-diagram",
+                        "version":  "0.2.0"
+                    }
+                ]
 }
