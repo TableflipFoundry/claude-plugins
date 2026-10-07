@@ -9,7 +9,7 @@
                         "name":  "obsidian-canvas-diagram",
                         "description":  "Generate richly-documented diagrams in an Obsidian vault. Each node is a full markdown file; bundled scripts lay the canvas out automatically, check it in Obsidian, and list issues found in the code.",
                         "source":  "./plugins/obsidian-canvas-diagram",
-                        "version":  "0.4.1"
+                        "version":  "0.4.2"
                     }
                 ]
 }
