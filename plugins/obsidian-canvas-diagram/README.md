@@ -80,11 +80,20 @@ Each request makes **one** diagram, with as many boxes as the chosen scope and d
 
 ## Automatic layout
 
-The AI decides what the diagram says: notes, arrows and colors. Bundled scripts decide where everything goes:
+The AI decides what the diagram says: notes, arrows, main paths, and what directly supports each step. Bundled scripts place those relationships:
 
 1. A layout engine (ELK) sorts the boxes into rows that follow the arrows, top to bottom.
 2. An optimizer tidies the layout inside those rows, so arrows don't overlap or run through boxes and labels stay clear. It keeps the top-to-bottom order.
-3. The scripts open the diagram **in Obsidian itself** (through its debug port), score what Obsidian actually drew, and take a screenshot. The AI reviews the screenshot and fixes the structure if needed.
+3. A relationship pass aligns simple chains and applies a semantic `<diagram>.layout.json` plan: straight main paths, helpers immediately beside their callers, aligned sibling branches, and local views of shared data notes. Arrow attachment sides are then optimized without moving the refined layout.
+4. The scripts open the diagram **in Obsidian itself**, score what it drew, and capture an overview plus readable close-ups. The AI reviews every section for proximity and clarity. This cleanup is part of creating the diagram, not a follow-up task for the user.
+
+Local shared-data cards link to the same markdown file; they do not create duplicate notes or databases. The pipeline verifies that adding these views preserves every note-to-note connection, label, direction and style. A rerun reuses existing local views.
+
+The job stop check requires a relationship review and a native quality report. It blocks arrows through cards, overlapping arrows, obscured labels and missing/detached drawings until corrected or explicitly reported as limitations. A low score alone does not certify a good layout. For an intentionally refined arrangement, `verify.mjs` checks it without reflowing it.
+
+The plan format and review criteria ship in [Relationship-first layout](skills/obsidian-canvas-diagram/references/relationship-layout.md). They do not depend on personal `AGENTS.md` instructions.
+
+**Existing diagrams stay put.** Opening a diagram or updating the plugin does not run a layout. The pipeline preserves saved arrangements by default; generating a new arrangement requires `--relayout`. Changing positions is presentation work, not evidence that the underlying code or relationships changed.
 
 **Line styles:** diagrams use the Obsidian community plugin **Advanced Canvas** (required). An unmodified copy of version 7.1.0 is bundled in `vendor/advanced-canvas/` (GPL-3.0; license and source link included). The scripts install it from there into a project's vault when needed and enable it. They never download it at diagram time, and they never look in other vaults or folders. Line style shows *when* something happens: solid for right away, long dashes for later or queued, dots for a timer, short dashes for planned. A dashed box border means planned and a dotted one means broken or unused.
 
@@ -112,7 +121,7 @@ The skill recommends a type based on the user's request and announces it before 
 
 ## Status
 
-v0.3: Advanced Canvas line styles and borders (required, auto-installed). v0.2: automatic layout, in-Obsidian review, issues notes, stop check. Top-to-bottom flow only; group boxes are planned.
+v0.5.1: relationship-first layout plans, local references to shared data, fixed-geometry arrow cleanup, readable section captures, preserved-layout verification and a rendering/relationship review gate. Includes the existing v0.5.0 work on feature groups and canonical canvas hashes. Top-to-bottom flow; groups are one level deep.
 
 ## License
 

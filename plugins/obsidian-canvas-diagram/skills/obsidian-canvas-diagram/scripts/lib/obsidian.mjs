@@ -184,5 +184,22 @@ export async function openCanvas(page, relPath) {
   return res;
 }
 
+/**
+ * Runs fn with Obsidian's page pretending to be width x height pixels (the
+ * window itself doesn't change), so a screenshot can be any size or shape,
+ * for example tall for a tall diagram. The page is put back afterwards.
+ */
+export async function withViewport(page, width, height, fn) {
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+    await page.waitForTimeout(500);
+    return await fn(cdp);
+  } finally {
+    await cdp.send('Emulation.clearDeviceMetricsOverride').catch(() => {});
+    await cdp.detach().catch(() => {});
+  }
+}
+
 /** Vault-relative path for an absolute file path. */
 export const relToVault = (vaultRoot, file) => path.relative(vaultRoot, path.resolve(file));

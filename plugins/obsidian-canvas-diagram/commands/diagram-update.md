@@ -55,6 +55,6 @@ Tell the user in one line that the diagram was converted to the current legend.
 
 ## 5. Lay out, review, report
 
-Run the pipeline on the changed canvas, review the screenshot, fix and repeat, then record the review (SKILL.md, "Layout and review"). The whole diagram is laid out again, so boxes may move.
+Preserve the user's manual arrangement and the existing `.layout.json` plan. For structural changes, update the semantic plan, run the pipeline, and finish the relationship-first pass with whole-diagram and readable close-up review. For geometry the user intentionally refined, use `verify.mjs` to check it without reflow. Keep helpers close to callers and shared-data references near their uses. Record `job.mjs reviewed ... --relationships` after the final verification (SKILL.md, "Layout and review"). Never undo cleanup with an unnecessary global reflow.
 
 Report: what changed, drift findings, any forks, and anything still unclear.

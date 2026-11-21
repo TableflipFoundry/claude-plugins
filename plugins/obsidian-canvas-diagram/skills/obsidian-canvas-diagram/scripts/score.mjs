@@ -140,12 +140,32 @@ for (const b of boxes) {
   // a starting point: arrows leave it, none arrive. It should sit in the top row.
   if (!isData(b) && outgoing.has(b.id) && !incoming.has(b.id) && b.y > topY + 40) issues.startNotAtTop.push({ node: b.name });
 }
-issues.dataNotBeside = [];
+// Inside a group, a data box belongs in the row of a step (of that group) that
+// uses it. Outside any group it's a shared box with no row: it belongs among
+// the groups (or loose steps) it serves, so its arrows stay short.
+const groupsAll = geo.nodes.filter(n => n.group);
+const inside = (b, g) => b.x >= g.x && b.y >= g.y && b.x + b.w <= g.x + g.w && b.y + b.h <= g.y + g.h;
+const groupOf = b => groupsAll.filter(g => inside(b, g)).sort((p, q) => p.w * p.h - q.w * q.h)[0] ?? null;
+issues.dataNotBeside = []; issues.sharedBoxFar = [];
 for (const b of boxes) {
   if (!isData(b)) continue;
   const steps = E.filter(e => e.from === b.id || e.to === b.id).map(e => byId.get(e.from === b.id ? e.to : e.from)).filter(n => n && !isData(n));
-  if (steps.length && !steps.some(s => Math.abs(cy(s) - cy(b)) < Math.max(s.h, b.h) / 2))
-    issues.dataNotBeside.push({ node: b.name, steps: steps.map(s => s.name).join(', ') });
+  if (!steps.length) continue;
+  const g = groupOf(b);
+  if (g) {
+    const own = steps.filter(s => groupOf(s) === g);
+    if (own.length && !own.some(s => Math.abs(cy(s) - cy(b)) < Math.max(s.h, b.h) / 2))
+      issues.dataNotBeside.push({ node: b.name, steps: own.map(s => s.name).join(', ') });
+  } else {
+    const users = [...new Set(steps.map(s => groupOf(s) ?? s))];
+    const minX = Math.min(...users.map(u => u.x)) - 400, maxX = Math.max(...users.map(u => u.x + u.w)) + 400;
+    const minY = Math.min(...users.map(u => u.y)) - 400, maxY = Math.max(...users.map(u => u.y + u.h)) + 400;
+    const c = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+    // Compare rectangle edges, not centers: a local data card can need more
+    // than 400 center-to-center units just to leave room for its arrow label.
+    if (b.x + b.w < minX || b.x > maxX || b.y + b.h < minY || b.y > maxY)
+      issues.sharedBoxFar.push({ node: b.name, serves: users.map(u => u.name ?? u.label ?? u.id).join(', ') });
+  }
 }
 // (no size check: a diagram has as many boxes as its scope and depth need)
 
@@ -153,7 +173,7 @@ for (const b of boxes) {
 // Upward arrows are normal when that's the way data or a request travels, so
 // they're listed for a direction double-check but cost nothing.
 const W = { throughNode: 10, overlap: 10, labelOnNode: 6, labelOnLabel: 6, labelOnEdge: 4, crossing: 1,
-  upward: 0, startNotAtTop: 5, dataNotBeside: 3, tooBig: 20, missingNote: 50, looseArrow: 50 };
+  upward: 0, startNotAtTop: 5, dataNotBeside: 3, sharedBoxFar: 3, tooBig: 20, missingNote: 50, looseArrow: 50 };
 const score = Object.entries(W).reduce((s, [k, w]) => s + w * issues[k].length, 0);
 
 if (flag === '--json') { console.log(JSON.stringify({ score, issues })); process.exit(0); }
@@ -163,6 +183,7 @@ const titles = {
   labelOnLabel: 'labels on labels', labelOnEdge: 'labels sitting on another edge', crossing: 'edge crossings',
   upward: 'arrows pointing upward (fine if that is the way the thing travels; double-check the direction)', startNotAtTop: 'starting points not in the top row',
   dataNotBeside: 'data boxes not in the row of a step that uses them (they read as a next step)',
+  sharedBoxFar: 'shared data boxes (outside any group) not sitting among the groups they serve',
   missingNote: 'boxes whose note Obsidian cannot find (shows as a file path, not the note)',
   looseArrow: 'arrows not connected to their boxes on screen (close and reopen the canvas in Obsidian, then score again)',
 };

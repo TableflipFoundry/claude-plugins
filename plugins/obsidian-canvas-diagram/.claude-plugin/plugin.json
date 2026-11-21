@@ -1,7 +1,7 @@
 {
   "name": "obsidian-canvas-diagram",
-  "version": "0.4.2",
-  "description": "Generate richly-documented diagrams in an Obsidian vault. Each diagram node is backed by a full markdown file; bundled scripts lay the canvas out automatically (top-to-bottom flow) and check it in Obsidian itself.",
+  "version": "0.5.1",
+  "description": "Generate richly-documented Obsidian diagrams with straight paths, nearby helpers, local references to shared data, and required in-Obsidian visual verification.",
   "author": {
     "name": "Tableflip Foundry",
     "email": "tableflipfoundry@gmail.com"
