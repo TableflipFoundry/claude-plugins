@@ -1,10 +1,12 @@
 ---
-description: Plan something that isn't built yet. Interviews you about what you want to make, designs how it could be built, then draws it as one auto-laid-out Obsidian diagram.
+description: Plan a proposed system, then create one documented I/O diagram with relationship-first layout and native visual review.
 ---
 
 The user wants to plan something that doesn't exist yet. Use the **obsidian-canvas-diagram** skill and follow its SKILL.md for notes, canvas format, colors, layout and review. This file covers how planning *starts*.
 
 What they described (may be empty): $ARGUMENTS
+
+Read the shared [output-quality workflow](../skills/obsidian-canvas-diagram/references/output-quality.md) and [I/O ports](../skills/obsidian-canvas-diagram/references/io-ports.md). Reuse scope, detail and grouping already established in the conversation; do not repeat an approval or interview the user has already completed. New diagrams use I/O ports. Saved diagrams are converted or rearranged only when requested. A score alone never replaces whole-diagram and readable closeup review.
 
 ## Rules for this mode
 

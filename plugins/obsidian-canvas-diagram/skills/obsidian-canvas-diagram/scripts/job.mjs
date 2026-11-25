@@ -29,7 +29,7 @@ if (cmd === 'start') {
   writeJob(vault, {
     canvas: path.relative(vault, canvas).split(path.sep).join('/'),
     startedAt: new Date().toISOString(),
-    notesIndexAt: null, layout: null, review: null, reviewVersion: 2, noIssues: false, skips: {}, history: [],
+    notesIndexAt: null, layout: null, review: null, reviewVersion: 3, noIssues: false, skips: {}, history: [],
   });
   console.log(`Diagram job started for ${path.relative(vault, canvas)}. The stop check is on until every check passes.`);
   console.log(`Next, the reuse check: node "${path.join(here, 'notes-index.mjs')}" "${vault}"`);

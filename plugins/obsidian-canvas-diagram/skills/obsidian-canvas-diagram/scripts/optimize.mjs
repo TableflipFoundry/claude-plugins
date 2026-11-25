@@ -7,6 +7,7 @@
 // Scores the same problems as score.mjs, plus flow and compactness terms.
 // Group nodes are not supported yet (they are ignored and keep their position).
 import fs from 'node:fs';
+import { anchorPoint, isIO } from './lib/canvas-io.mjs';
 
 const [inPath, outPath, itersArg = '60000', seedArg = '1'] = process.argv.slice(2);
 const canvas = JSON.parse(fs.readFileSync(inPath, 'utf8').replace(/^\uFEFF/, ''));
@@ -114,9 +115,12 @@ function anchor(i, side, off) {
   return [cx + nx * (Wd[i] / 2 + off), cy + ny * (Ht[i] / 2 + off)];
 }
 function edgePoints(k) {
-  const p0 = anchor(EF[k], FS[k], 7), p3 = anchor(ET[k], TS[k], 7);
+  const io = isIO(edges[k]);
+  const port = (i,side,kind) => { const p = anchorPoint({minX:X[i],minY:Y[i],maxX:X[i]+Wd[i],maxY:Y[i]+Ht[i]},side,kind); return [p.x,p.y]; };
+  const p0 = io ? port(EF[k],FS[k],'output') : anchor(EF[k],FS[k],7);
+  const p3 = io ? port(ET[k],TS[k],'input') : anchor(ET[k],TS[k],7);
   const dist = Math.hypot(p3[0] - p0[0], p3[1] - p0[1]);
-  const d = Math.min(150, Math.max(70, dist / 2));
+  const d = io ? Math.max(40, Math.min(240, dist / 2)) : Math.min(150, Math.max(70, dist / 2));
   const [ax, ay] = NORMAL[FS[k]], [bx, by] = NORMAL[TS[k]];
   const p1 = [p0[0] + ax * d, p0[1] + ay * d], p2 = [p3[0] + bx * d, p3[1] + by * d];
   const approx = dist + d;
@@ -127,7 +131,9 @@ function edgePoints(k) {
     const a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, e = t * t * t;
     pts[s] = [a * p0[0] + b * p1[0] + c * p2[0] + e * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + e * p3[1]];
   }
-  const m = pts[n >> 1];
+  const m = [...pts[n >> 1]]; // label shifts must never bend the sampled path
+  const offset = io ? edges[k].canvasIO?.labelOffset : null;
+  if (Number.isFinite(offset?.x) && Number.isFinite(offset?.y)) { m[0] += offset.x; m[1] += offset.y; }
   const w = labelW(edges[k].label || '');
   const label = edges[k].label ? { x: m[0] - w / 2, y: m[1] - LABEL_H / 2, w, h: LABEL_H } : null;
   return { pts, label, len: approx };

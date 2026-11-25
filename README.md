@@ -21,3 +21,7 @@ No additional setup is required — plugins clone over HTTPS, no SSH keys or hos
 Generate richly-documented diagrams in an Obsidian vault. Each diagram node is backed by a full markdown file (plain-language explanation + structured technical sections); the `.canvas` file assembles them visually with universal color conventions and human-style layout.
 
 Slash commands: `/diagram-plan`, `/diagram-review`, `/diagram-update`.
+
+## Latest diagram release
+
+Version **0.6.0** includes the bundled Canvas IO desktop companion, mirrored Input/Output ports, relationship-first layouts, label refinement and required native section review. [How it works](plugins/obsidian-canvas-diagram/docs/how-it-works.md). Requires Obsidian desktop 1.15.1+ for I/O diagrams.

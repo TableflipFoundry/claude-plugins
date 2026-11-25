@@ -12,6 +12,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { enableIO } from './lib/canvas-io.mjs';
+import { refineIO } from './lib/io-layout.mjs';
 import { readRelationships, prepareRelationships, selectRelationships, refineRelationships } from './lib/relationships.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -33,6 +35,17 @@ let canvas = JSON.parse(fs.readFileSync(abs, 'utf8').replace(/^\uFEFF/, ''));
 // diagram, or re-running verification must not silently rearrange it.
 const hasSavedLayout = (canvas.nodes ?? []).some(n => n.id === 'legend-group' ||
   n.type === 'file' && ((n.x ?? 0) !== 0 || (n.y ?? 0) !== 0));
+// New diagrams use I/O; saved diagrams require explicit conversion.
+if (!hasSavedLayout || args.includes('--io')) {
+  enableIO(canvas);
+  if (hasSavedLayout && args.includes('--io')) fs.writeFileSync(abs, JSON.stringify(canvas, null, '\t'));
+}
+if (hasSavedLayout && args.includes('--refine-io')) {
+  const result = refineIO(canvas, readRelationships(abs).plan);
+  canvas = result.canvas;
+  fs.writeFileSync(abs, JSON.stringify(canvas, null, '\t'));
+  console.log(`Refined I/O attachments/labels with fixed cards. Prediction: ${JSON.stringify(result.report)}`);
+}
 if (hasSavedLayout && !args.includes('--relayout')) {
   console.log('Preserving the saved layout. Use --relayout only when a new arrangement is explicitly requested.');
   if (!args.includes('--no-check')) {
@@ -42,7 +55,7 @@ if (hasSavedLayout && !args.includes('--relayout')) {
     });
     process.exit(code ?? 1);
   }
-  console.log('No positions, attachments or connections changed; verification was skipped (--no-check).');
+  console.log(args.includes('--refine-io') ? 'Refined I/O attachments/labels; saved card positions preserved. Verification skipped (--no-check).' : args.includes('--io') ? 'Converted I/O metadata; saved card positions and attachment sides preserved. Verification skipped (--no-check).' : 'No positions, attachments or connections changed; verification was skipped (--no-check).');
   process.exit(0);
 }
 // The legend panel is generated: drop any old one, a fresh one is added after layout.
@@ -103,6 +116,12 @@ const run = (script, argv) => new Promise((resolve, reject) => {
 
 // --- layout + optimize -------------------------------------------------------
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'canvas-layout-'));
+const cleanupWork = () => {
+  if (path.dirname(path.resolve(work)) !== path.resolve(os.tmpdir()) || !path.basename(work).startsWith('canvas-layout-'))
+    throw new Error('Refusing to remove an unexpected layout scratch directory');
+  fs.rmSync(work, { recursive: true, force: true });
+};
+process.once('exit', cleanupWork);
 const seeds = +opt('--seeds', 3);
 const itersFor = n => +opt('--iters', Math.min(200000, Math.max(20000, 3000 * n)));
 // Fresh random starting points on every run, so re-running gives new layouts to
@@ -349,6 +368,13 @@ if (!groups.length) {
   console.log(`Laid out in ${Math.round((Date.now() - t0) / 1000)}s (--seed ${base} repeats this run).`);
 }
 
+// Finish against the fully assembled drawing, including inter-group edges.
+// Predictions help selection; native quality and visual review remain required.
+{
+  const final = refineIO(laid, relationshipPlan);
+  laid = final.canvas;
+  console.log(`Final I/O refinement (prediction): ${JSON.stringify(final.report)}`);
+}
 // Keep everything from the original file except geometry.
 for (const n of laid.nodes) { delete n._data; delete n._entry; delete n._exit; delete n.group; }
 {
@@ -362,6 +388,7 @@ for (const n of laid.nodes) { delete n._data; delete n._entry; delete n._exit; d
   // edges touching side boxes (none expected) are kept as written
   laid.edges.push(...(canvas.edges ?? []).filter(e => sideIds.has(e.fromNode) || sideIds.has(e.toNode)));
   const legend = buildLegend(laid, vaultRoot, x, y);
+  for (const node of legend.nodes) node.canvasIO = { ports: false };
   laid.nodes.push(...legend.nodes);
   laid.edges.push(...legend.edges);
 }
@@ -372,6 +399,7 @@ const stamp = { at: new Date().toISOString(), hash: fileHash(abs), checked: fals
 updateJob(vaultRoot, { layout: stamp });
 
 // --- check in Obsidian -------------------------------------------------------
+cleanupWork();
 if (args.includes('--no-check')) process.exit(0);
 const shot = path.join(os.tmpdir(), `${path.basename(abs, '.canvas')}-${Date.now()}.png`);
 try {

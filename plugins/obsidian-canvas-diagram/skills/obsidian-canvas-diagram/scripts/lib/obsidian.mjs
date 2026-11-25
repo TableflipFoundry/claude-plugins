@@ -161,6 +161,12 @@ export async function ensureAdvancedCanvas(page, vaultRoot) {
 
 /** Opens a canvas (path relative to the vault) in the active tab and zooms to fit. */
 export async function openCanvas(page, relPath) {
+  const vaultRoot = await page.evaluate(() => app.vault.adapter.basePath);
+  const data = JSON.parse(fs.readFileSync(path.join(vaultRoot, relPath), 'utf8').replace(/^\uFEFF/, ''));
+  if ((data.edges ?? []).some(e => e.canvasIO?.version === 1)) {
+    const { ensureCanvasIO } = await import('./canvas-io.mjs');
+    await ensureCanvasIO(page, vaultRoot);
+  }
   const res = await page.evaluate(async (p) => {
     // Obsidian may not have indexed a just-written file yet
     for (let i = 0; i < 20 && !app.vault.getAbstractFileByPath(p); i++) await new Promise(r => setTimeout(r, 250));

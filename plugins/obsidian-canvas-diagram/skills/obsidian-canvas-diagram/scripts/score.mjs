@@ -103,7 +103,9 @@ for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) {
     if (shared.some(id => nearNode(a.pts[s], id, 45))) continue;
     for (let t = 1; t < b.pts.length; t++) if (segX(a.pts[s - 1], a.pts[s], b.pts[t - 1], b.pts[t])) { crossed = true; break; }
   }
-  if (crossed) issues.crossing.push({ a: name(a), b: name(b) });
+  if (crossed) issues.crossing.push({ a: name(a), b: name(b), kind:
+    a.from===b.to&&a.to===b.from ? 'return-pair' :
+    [a.from,a.to].some(id=>id===b.from||id===b.to) ? 'shared-node' : 'unrelated' });
 }
 
 // 4. labels

@@ -33,6 +33,8 @@ test('real pipeline applies helper constraints and reuses local data references 
       assert.equal(c.nodes.filter(n => n.type === 'file').length, 5);
       assert.equal(c.edges.find(e => e.id === 'write').toNode, 'store--ref-save');
       assert.ok(c.nodes.some(n => n.id === 'legend-group'));
+      assert.ok(c.edges.filter(e => !e.id.startsWith('legend-')).every(e => e.canvasIO?.fromPort === 'output' && e.canvasIO?.toPort === 'input'));
+      assert.ok(c.nodes.filter(n => n.id.startsWith('legend-')).every(n => n.canvasIO?.ports === false));
     }
     // Exercise the pre-existing grouped pipeline too: each local data view
     // must stay with its own reader/writer, rather than becoming a global hub.

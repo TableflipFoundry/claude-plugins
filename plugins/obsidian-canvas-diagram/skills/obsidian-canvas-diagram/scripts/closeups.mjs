@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { connect, findVaultRoot, openCanvas, relToVault, withViewport } from './lib/obsidian.mjs';
+import { fileHash, updateJob } from './lib/job.mjs';
 
 const [canvasFile, outDir, size = '1900x1300'] = process.argv.slice(2);
 if (!canvasFile || !outDir) { console.error('usage: node closeups.mjs <diagram.canvas> <out-folder> [WIDTHxHEIGHT]'); process.exit(2); }
@@ -48,13 +49,16 @@ try {
             tiles.push({ name: `${r.name}-${++count}`, bbox: b });
         }
     }
+    const files = [];
     for (const r of tiles) {
       await page.evaluate(b => app.workspace.getLeaf(false).view.canvas.zoomToBbox({ minX: b.minX - b.m, minY: b.minY - b.m, maxX: b.maxX + b.m, maxY: b.maxY + b.m }), { ...r.bbox, m: 60 });
       await page.waitForTimeout(700);
       const file = path.join(outDir, r.name.replace(/[^\w.-]+/g, '-').replace(/^-|-$/g, '') + '.png');
       await (el ?? page).screenshot({ path: file, timeout: 20000 });
       console.log(file);
+      files.push(path.resolve(file));
     }
+    updateJob(vault, { closeups: { at: new Date().toISOString(), hash: fileHash(canvasFile), count: files.length, files } });
   });
 } finally {
   await browser.close();

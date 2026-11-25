@@ -14,7 +14,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readJob, writeJob, markerPath, fileHash } from './lib/job.mjs';
 import { legendProblems, isLegendItem } from './lib/legend.mjs';
-import { renderProblems } from './lib/render-quality.mjs';
+import { renderProblems, reviewEvidenceProblems } from './lib/render-quality.mjs';
+import { parseNote } from './lib/notes.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SECTIONS = {
@@ -29,13 +30,6 @@ const SECTIONS = {
   event: ['Trigger', 'Payload', 'Subscribers'],
 };
 
-function parseNote(text) {
-  text = text.replace(/^﻿/, '');
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  const fm = {};
-  if (m) for (const line of m[1].split(/\r?\n/)) { const kv = line.match(/^(\w+):\s*(.*)$/); if (kv) fm[kv[1]] = kv[2].replace(/\s+#.*$/, '').trim(); }
-  return { fm, hasFront: !!m, body: m ? text.slice(m[0].length) : text };
-}
 
 function vaultFiles(vault) {
   const names = new Set(), paths = new Set();
@@ -103,9 +97,9 @@ export function runChecks(vault, job) {
     if (!fs.existsSync(p) || !p.endsWith('.md')) continue;
     if (fs.statSync(p).mtimeMs < started - 2000) continue; // reused, untouched: not this job's work
     const rel = n.file;
-    const { fm, hasFront, body } = parseNote(fs.readFileSync(p, 'utf8'));
+    const { fm, hasFront, body, errors } = parseNote(fs.readFileSync(p, 'utf8'));
     const isIssues = /-issues\.md$/i.test(rel);
-    const problems = [];
+    const problems = [...errors];
     if (!hasFront) problems.push('it has no frontmatter block at the top');
     for (const k of ['id', 'title', 'type', 'status', 'level']) if (!fm[k]) problems.push(`frontmatter is missing "${k}"`);
     // people and outside services have no code of their own, so no source is required
@@ -141,6 +135,7 @@ export function runChecks(vault, job) {
   }
 
   // the agent must have looked at the latest screenshot and recorded what it checked
+  for (const problem of reviewEvidenceProblems(job,fileHash(canvasFile),(canvas.edges ?? []).filter(e=>!isLegendItem(e)).length)) fail(problem.id,problem.msg);
   const reviewedAfterLayout = job.review && job.layout && Date.parse(job.review.at) >= Date.parse(job.layout.at);
   if (!reviewedAfterLayout) fail('review', `Open the latest screenshot with the Read tool, check it against SKILL.md "Review", then record what you checked: node "${path.join(here, 'job.mjs')}" reviewed "${canvasFile}" "<flow, arrows, labels, level: what you saw and changed>"`);
   if (job.reviewVersion >= 2 && !job.review?.relationshipsChecked)

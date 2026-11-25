@@ -35,10 +35,13 @@ Alongside `feature.canvas`, write `feature.layout.json`. For any diagram with br
 - `supports`: a directly connected helper and caller on the same row, separated by a short horizontal gap. Choose left/right by the surrounding story. Use at most one immediate helper per side; place additional branches in a sibling row so their arrows do not run through an intervening card.
 - `rows`: sibling actions or feature entry points that should share a row. For example, declare the pages branching from one tab selector as a row, as well as alternative handlers branching from one API router. Do not combine steps that depend on each other.
 - `references`: a shared **data** note, the user of its local view, and the exact incident edge IDs to attach there. Optional `id` sets the reference node's ID; otherwise it is `<node>--ref-<anchor>`. The original card remains. Reruns reuse the reference rather than adding another copy.
+- `attachments`: an object keyed by existing I/O edge ID, with `fromSide`, `toSide`, and optional `labelOffset: {x,y}`. It records deliberate local decisions for the final fixed-card pass. See [I/O ports](io-ports.md). It changes neither note identity nor arrow direction.
 
 Constraints stay inside a feature group (or among ungrouped nodes). Use separate spines per group. Local references inherit their user's group. The pipeline rejects missing IDs, invented spine links, unrelated edge redirection and contradictory placements rather than silently changing meaning.
 
 The pipeline first lays out and optimizes the graph, then aligns its simple chains and applies the semantic plan. It moves a constrained neighborhood together when packing rows, so collision cleanup does not stagger the chain again. Default simple-chain alignment works without a sidecar; semantic helper placement needs the plan because topology alone cannot identify the main story.
+
+After group assembly, the final I/O pass chooses sides and label offsets without moving the cards. It retains declared straight paths, immediate supports and explicit attachments. It evaluates the complete drawing so an inter-group wire is not assessed only inside one group. Approximate predictions do not replace the native rendering score or the all-section review.
 
 **Saved diagrams are stable by default.** A plain `pipeline.mjs <canvas>` preserves an existing arrangement and verifies it. New zero-position diagrams receive their initial layout. Use `--relayout` only for an explicitly requested new arrangement, including a requested cleanup; never as a side effect of installing/updating the plugin or merely opening/checking a diagram. A code/documentation update is not permission to globally rearrange an established diagram.
 

@@ -1,10 +1,12 @@
 ---
-description: Diagram existing code. Asks how much detail you want, then reviews the codebase and builds linked, auto-laid-out Obsidian diagrams.
+description: Read existing code and create one documented I/O diagram with preserved relationships, nearby helpers and native visual review.
 ---
 
 The user wants diagrams of code that already exists. Use the **obsidian-canvas-diagram** skill and follow its SKILL.md for notes, canvas format, colors, layout and review. This file covers how the review *starts* and what it produces.
 
 The argument (may be empty): $ARGUMENTS
+
+Read the shared [output-quality workflow](../skills/obsidian-canvas-diagram/references/output-quality.md) and [I/O ports](../skills/obsidian-canvas-diagram/references/io-ports.md). Reuse scope, detail and grouping already established in the conversation; do not repeat an approval or interview the user has already completed. New diagrams use I/O ports. Saved diagrams are converted or rearranged only when requested. A score alone never replaces whole-diagram and readable closeup review.
 
 ## Rules for this mode
 

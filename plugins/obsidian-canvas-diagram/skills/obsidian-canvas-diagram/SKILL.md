@@ -7,7 +7,7 @@ description: Generate richly-documented diagrams in an Obsidian vault. Each diag
 
 This skill produces diagrams as **Obsidian Canvas** files. Every box on a canvas is a full markdown note from a shared `nodes/` pool. The canvas is the map; the notes are the territory.
 
-You decide the **meaning**: which notes exist, what they say, how they connect, the main paths, and what directly supports each step. Bundled scripts place those relationships using an optional semantic layout plan. Always finish the relationship-first visual pass before delivering the diagram; automatic layout or a low collision score alone is not completion. Read [Relationship-first layout](references/relationship-layout.md) before layout or updates.
+You decide the **meaning**: which notes exist, what they say, how they connect, the main paths, and what directly supports each step. Bundled scripts place those relationships using an optional semantic layout plan. Always finish the relationship-first visual pass before delivering the diagram; automatic layout or a low collision score alone is not completion. Read [Relationship-first layout](references/relationship-layout.md) and [Output quality](references/output-quality.md) before layout or updates. They describe the required result, not only the first automatic pass.
 
 ## When to use this skill
 
@@ -100,7 +100,7 @@ Every note has:
 ```yaml
 ---
 id: <stable-identifier, kebab-case>
-title: <human-readable name>
+title: <human-readable name; quote it if it contains a colon>
 type: <person | system | screen | component | function | data | decision | event>
 status: <planned | exists>
 source: <path/to/code/file>      # only when status: exists
@@ -209,6 +209,10 @@ What's wrong, in plain words. What the shop would notice.
 
 Severity: **high** (wrong prices or data, money, security, a feature users rely on is broken), **medium** (a visible feature broken or misleading, or a real risk), **low** (dead code, duplication, cleanup). Number them most serious first. Group dead code at the end.
 
+## I/O connections
+
+New diagrams use the bundled Canvas IO desktop companion: Output-to-Input ports on each side, with separate return lanes where code proves a return. Read [I/O ports](references/io-ports.md) when creating or converting a diagram. Existing saved diagrams retain their edge mode and placement; `pipeline.mjs <canvas> --io` explicitly converts without reflow. The native tools install the bundled companion for I/O diagrams. Requires Obsidian desktop 1.15.1+.
+
 ## The .canvas file
 
 A canvas is JSON with two arrays: `nodes` (boxes) and `edges` (arrows).
@@ -244,11 +248,11 @@ A canvas is JSON with two arrays: `nodes` (boxes) and `edges` (arrows).
 - **Arrows may point up.** Position doesn't decide direction. Don't flip an arrow to make the picture flow downward.
 - **Data boxes aren't steps.** Put data beside its reader or writer, with a short sideways arrow. Only arrows between steps decide sequence. When shared data creates long return wires through unrelated features, add local file-card references to the same note using the layout plan. Do not duplicate the markdown note or imply separate stores. A shared central view is also appropriate when its connections remain short and clear.
 - A diagram's starting point (a user, a trigger, an incoming event) has arrows going *out* and none coming *in*.
-- **Watch out for two-way pairs between main pieces.** An arrow each way between two big boxes (screens → server "requests", server → screens "live updates") forms a loop. The layout may break the loop the wrong way and put the server *above* the screens. At Overview level, draw only the main direction and describe the other in the notes.
+- **Treat call and return as distinct interactions.** Draw both directions when source evidence and the selected detail require them. Declare a main `spines` path so a cycle does not decide the story. Never remove a true relationship merely to simplify layout; an overview can document an out-of-scope return in the note.
 - `color`: `"5"` data, `"6"` outside service, `"1"` error, or leave it out for a plain call (see "The legend").
 - `styleAttributes`: line style for *when* it happens (see "The legend"). Leave it out for "right away".
 - `label`: optional. **Keep labels short (1–3 words)** and name **what travels**: "pricing rules", "new prices", "sale", "fetch now". A label must read correctly in the arrow's direction. Labels take real space on the canvas, so add one only when the arrow's meaning isn't obvious.
-- **Don't draw every connection.** Draw the ones that explain how the system works. A box with more than about 6 arrows is a sign the diagram needs simplifying. **One exception:** in an Overview of a system built around one central server, that server is naturally the hub, with an arrow to each database and outside service. That's accepted at Overview level.
+- **Scope determines which relationships belong.** A hub can legitimately have many edges. Arrange its callers, helpers and stores coherently; do not delete necessary relationships or add disconnected duplicates to improve a score. Preserve all original subjects and note-level relationships during layout-only edits.
 
 **Groups (features)**
 
@@ -350,7 +354,7 @@ The scripts are in the `scripts/` folder inside this skill's base directory (the
 
 ### One-time setup
 
-The first time, the scripts need two libraries. If the pipeline prints `SETUP NEEDED`, run:
+The first time, the scripts need `elkjs`, `playwright-core` and `yaml`. If the pipeline prints `SETUP NEEDED`, run:
 
 ```
 npm install --prefix "<scripts>"
@@ -398,27 +402,21 @@ A few crossings are normal in a connected system. Don't chase a score of 0.
 
 **When the picture and the score disagree, trust the picture.** The score can miss things, for example labels half-hidden behind arrows. Fix what you see.
 
-### Fixing problems: change the structure, never the pixels
+### Fixing problems without changing meaning
 
-**Prefer semantic constraints to pixel edits.** Use the `.layout.json` plan to align paths and attach helpers. Do not change true relationships to fit an automatic layout. If an intentional visual refinement cannot be expressed in the plan, preserve it with `verify.mjs` rather than running a global reflow that undoes it. See [Relationship-first layout](references/relationship-layout.md).
+Preserve original nodes, note contents, names, labels, edge IDs, directions, colors, styles and note-level endpoints. Do not drop relationships, hide names, rewrite explanations or invent duplicate stores to obtain a better score.
 
-| Problem | Fix |
-|---|---|
-| Crowded | Check every box belongs at the chosen depth, and every arrow tells part of the story. Remove only what fails those checks; never drop parts the diagram needs, and never split into extra diagrams. |
-| Wrong order / no clear story | Check every arrow points the way its thing really travels (see "Arrows"). Fix wrong directions, never flip a correct one for looks. Look for a two-way pair between main boxes and keep only the direction that matters for the story. |
-| An arrow passes through a box, or one crossing spoils it | Run the pipeline again unchanged. Each run tries fresh random layouts, so small problems often disappear. If it's still there after one retry and it's only one arrow, accept it. |
-| One box has arrows to everything | Keep the arrows that explain the story and describe the rest in that box's note |
-| Many long arrows | Drop connections that don't explain anything |
-| Labels colliding | Shorten labels, or remove ones that color already explains |
-| An arrow crosses the whole diagram | Ask whether it's needed at this level. If yes, accept it; the pipeline routes long arrows around the edge |
+Use the semantic plan to fix main paths and nearby helpers. The final I/O pass handles curve attachments and label offsets after placement. For a saved diagram that the user asked to refine, use `pipeline.mjs <canvas> --refine-io` or `refine-io.mjs <canvas>` followed by `verify.mjs`. These preserve card positions. Verification alone does not authorize refinement or global reflow.
 
-Then run the pipeline again. **Stop after 3 rounds** and report what's left; don't loop forever.
+Inspect the whole curve, not only its endpoints. Prefer ports facing the other node, but reject a facing attachment that passes through a helper. Preserve deliberate side choices and label offsets in `attachments` (see I/O ports reference). If attachments cannot clear an obstacle, refine the authorized local group. Do not globally reflow an approved diagram afterward.
+
+Prioritize a coherent story, unobstructed cards, distinct followable lines and readable labels. Ordinary crossings are classified as return-pair, shared-node or unrelated. Prefer fewer unrelated crossings without imposing a hard rule. Zero crossings is not guaranteed. Limit visual repair to three rounds and report actual remaining limitations through the documented job checks.
 
 ### Current limits
 
 - Top-to-bottom flow only. For a sequence diagram, time runs downward.
 - Groups are one level deep, and the arrows between groups are placed after the groups, so a long arrow between two features may cross a third.
-- Arrows use Obsidian's normal curves.
+- I/O arrows use the companion's cubic curves and fixed mirrored ports. There is no waypoint editor, dynamic port swapping or universal crossing-free guarantee.
 
 ## Diagram type selection
 
@@ -443,13 +441,13 @@ This plugin has a **stop check**. While a diagram job is running, you can't fini
    `node "<scripts>/job.mjs" start "<path/to/diagram.canvas>"`
 2. **Run the reuse check** (next section): `node "<scripts>/notes-index.mjs" "<path/to/Diagrams>" [words]`
 3. Write the notes, issues note and canvas, then run the pipeline.
-4. **Look at the screenshot**, then **record your review** in a sentence or two (flow, arrows, labels, level: what you saw and changed):
+4. **Look at the overview and every readable section** (run `closeups.mjs <canvas> <review-folder>`), then **record your review** in a sentence or two (flow, arrows, labels, level: what you saw and changed):
    `node "<scripts>/job.mjs" reviewed "<canvas>" "<main paths, nearby helpers, shared data, preservation, arrows and labels: what you checked>" --relationships`
    New jobs require this relationship-review attestation. If you change anything afterwards, run the pipeline for a new layout or `verify.mjs` to preserve intentional geometry, inspect the new screenshots and record the review again.
 5. If the review found **no problems at all** in the code: `node "<scripts>/job.mjs" no-issues "<canvas>"`
 6. Check where you stand at any time: `node "<scripts>/job.mjs" status "<canvas>"`
 
-What it checks: the reuse check ran; every box's note exists; the current canvas was checked in Obsidian; notes and links meet the format; the issues note is present (or "no issues" recorded); and you recorded a relationship-first visual review after the latest check. New jobs also require the native quality report and block obstructed cards/labels, overlapping arrows, missing notes and detached drawings until fixed or explicitly reported through the documented skip workflow. Ordinary crossings alone do not block completion.
+What it checks: the reuse check ran; every box's note exists; the current canvas was checked in Obsidian; notes and links meet the format; the issues note is present (or "no issues" recorded); and you recorded a relationship-first visual review after the latest check. New jobs also require the native quality report, and nontrivial jobs require readable closeup evidence tied to the current Canvas hash before the relationship review. Obstructed cards/labels, overlapping arrows, missing notes and detached drawings block completion until fixed or explicitly reported through the documented skip workflow. Ordinary crossings alone do not block completion.
 
 When it blocks you, **do what each line says**. Each failure names its fix. If one truly can't be fixed (for example a source file you can't access), record why. It's then reported to the user instead of blocking:
 `node "<scripts>/job.mjs" skip "<canvas>" <check-id> "<reason>"`
@@ -498,3 +496,7 @@ Report briefly, in plain language:
 5. **Couldn't fix:** anything you recorded with `job.mjs skip`, or that the stop check gave up on. Leave this out if there's nothing.
 6. Anything else the user should check: unclear reuse matches, drift findings.
 7. How to view it: **open the project's `Diagrams` folder in Obsidian** (it's already in Obsidian's vault list if the pipeline ran) and start with the overview.
+
+## Review artifacts and cleanup
+
+Use overview and section screenshots during review; the closeup tool records their hash and count for the job. Record the relationship review after inspecting every section, then run `job.mjs status` and the stop check. Honor the user's retention preference after checks pass: remove only review images, temporary layout helpers and backups created for this task. Preserve final Canvas files, notes, semantic plans, issues notes and application data. A substantial reflow should have a temporary baseline for preservation comparison before it is removed. Report the actual layout method and remaining limitations; do not claim automatic layout or checks that did not run.
